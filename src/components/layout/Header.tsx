@@ -1,0 +1,186 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { gsap, ScrollTrigger, useGSAP, EASE_INOUT, EASE_OUT, reducedMotion } from '@/lib/gsap';
+import { TransitionLink } from '@/components/motion/TransitionLink';
+import { usePageTransition } from '@/components/motion/TransitionProvider';
+import { useLenis } from '@/components/motion/MotionProvider';
+import { ArrowIcon } from '@/components/ui/Button';
+import { navFor, countryFromPath, withExtraNav } from '@/content/site';
+import type { ContactProps, CountryLink } from './types';
+import { CountryMenu } from './CountryMenu';
+
+export function Header({ contact, countries, extraNav = [] }: { contact: ContactProps; countries: CountryLink[]; extraNav?: { label: string; href: string }[] }) {
+  const pathname = usePathname();
+  const { ready } = usePageTransition();
+  const lenis = useLenis();
+  const headerRef = useRef<HTMLElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const tl = useRef<gsap.core.Timeline | null>(null);
+  const [open, setOpen] = useState(false);
+  const [compact, setCompact] = useState(false);
+  const [dark, setDark] = useState(true);
+  const menuItems = withExtraNav(navFor(pathname), extraNav);
+  const country = countryFromPath(pathname);
+  const quoteHref = country ? `/quote?country=${country}` : '/quote';
+
+  // Compact state + light/dark tone from whichever section sits under the header.
+  useGSAP(
+    () => {
+      if (!ready) return;
+      const active = new Set<Element>();
+      const update = () => setDark(active.size > 0);
+      const triggers = gsap.utils.toArray<HTMLElement>('[data-tone="dark"]').map((el) =>
+        ScrollTrigger.create({
+          trigger: el,
+          start: 'top 40px',
+          end: 'bottom 40px',
+          onToggle: (s) => {
+            if (s.isActive) active.add(el);
+            else active.delete(el);
+            update();
+          },
+        }),
+      );
+      update();
+      const compactTrigger = ScrollTrigger.create({
+        start: 0,
+        end: 'max',
+        onUpdate: (s) => setCompact(s.scroll() > 80),
+      });
+      setCompact(window.scrollY > 80);
+      return () => {
+        triggers.forEach((t) => t.kill());
+        compactTrigger.kill();
+      };
+    },
+    { dependencies: [pathname, ready] },
+  );
+
+  // Menu timeline: dim + blur the page, panel slides in from the right, links rise in.
+  useGSAP(
+    () => {
+      const root = menuRef.current!;
+      const quick = reducedMotion();
+      tl.current = gsap
+        .timeline({ paused: true, defaults: { ease: EASE_INOUT } })
+        .set(root, { visibility: 'visible' })
+        .fromTo('.menu__dim', { opacity: 0 }, { opacity: 1, duration: quick ? 0.01 : 0.7 }, 0)
+        .fromTo('.menu__panel', { xPercent: 104 }, { xPercent: 0, duration: quick ? 0.01 : 0.9 }, 0)
+        .fromTo('.menu__link', { yPercent: 110 }, { yPercent: 0, duration: quick ? 0.01 : 0.9, ease: EASE_OUT, stagger: 0.05 }, quick ? 0 : 0.35)
+        .fromTo('.menu__foot', { autoAlpha: 0, y: 20 }, { autoAlpha: 1, y: 0, duration: quick ? 0.01 : 0.8, ease: EASE_OUT }, quick ? 0 : 0.6);
+    },
+    { scope: menuRef },
+  );
+
+  useEffect(() => {
+    const html = document.documentElement;
+    html.classList.toggle('menu-open', open);
+    if (open) {
+      lenis?.stop();
+      tl.current?.timeScale(1).play();
+      const first = menuRef.current?.querySelector<HTMLElement>('.menu__link a');
+      setTimeout(() => first?.focus(), 400);
+    } else {
+      tl.current?.timeScale(1.6).reverse();
+      lenis?.start();
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && open) {
+        setOpen(false);
+        toggleRef.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open, lenis]);
+
+  // A menu link starts a page transition; close the menu once the new page is in place.
+  useEffect(() => {
+    setOpen(false);
+    tl.current?.progress(0).pause();
+    document.documentElement.classList.remove('menu-open');
+  }, [pathname]);
+
+  return (
+    <>
+      <header ref={headerRef} className={`header ${compact ? 'is-compact' : ''} ${dark ? 'is-dark' : 'is-light'} ${open ? 'is-open' : ''}`}>
+        <TransitionLink href="/" className="header__logo hide-on-compact" aria-label="AEON Gulf home">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="logo-white" src="/brand/aeon-gulf-white.svg" alt="" width={132} height={46} />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="logo-color" src="/brand/aeon-gulf-color.svg" alt="" width={132} height={46} />
+        </TransitionLink>
+        <div className="header__right">
+          <CountryMenu className="hide-on-compact" countries={countries} />
+          <span className="chip chip--lang hide-on-compact" aria-label="Language: English">EN</span>
+          <TransitionLink href={quoteHref} className="chip chip--cta hide-on-compact">
+            <span className="chip__square" aria-hidden="true" />
+            Get a quote
+          </TransitionLink>
+          <button
+            ref={toggleRef}
+            type="button"
+            className="chip chip--menu"
+            aria-expanded={open}
+            aria-controls="site-menu"
+            onClick={() => setOpen((v) => !v)}
+          >
+            <span className={`menu-icon ${open ? 'is-x' : ''}`} aria-hidden="true" />
+            <span>{open ? 'Close' : 'Menu'}</span>
+          </button>
+        </div>
+      </header>
+
+      <div ref={menuRef} className="menu" id="site-menu" aria-hidden={!open} role="dialog" aria-label="Site menu">
+        <div className="menu__dim" onClick={() => setOpen(false)} />
+        <div className="menu__panel">
+          <div>
+            <p className="eyebrow eyebrow--small">Navigate</p>
+            <nav className="menu__links" aria-label="Main">
+              {menuItems.map((item) => {
+                const current = item.href.split('?')[0] === pathname;
+                return (
+                  <span className="menu__link" key={item.href}>
+                    <TransitionLink href={item.href} aria-current={current ? 'page' : undefined} tabIndex={open ? 0 : -1} onClick={() => item.href.includes('#') && setOpen(false)}>
+                      {item.label}
+                    </TransitionLink>
+                  </span>
+                );
+              })}
+            </nav>
+          </div>
+          <div className="menu__foot">
+            <div>
+              <p className="eyebrow eyebrow--small">Contact us</p>
+              <a className="menu__contact" href={`mailto:${contact.email}`} tabIndex={open ? 0 : -1}>
+                <ArrowIcon /> {contact.email}
+              </a>
+              <a className="menu__contact" href={contact.phoneHref} tabIndex={open ? 0 : -1}>
+                <ArrowIcon /> {contact.phone}
+              </a>
+            </div>
+            <div>
+              <p className="eyebrow eyebrow--small">Popular services</p>
+              <ul className="menu__list">
+                <li><TransitionLink href={`/${country ?? 'kuwait'}/services/company-formation-management`} tabIndex={open ? 0 : -1}>Company formation</TransitionLink></li>
+                <li><TransitionLink href={`/${country ?? 'kuwait'}/services/visa-immigration-services`} tabIndex={open ? 0 : -1}>Visa and immigration</TransitionLink></li>
+                <li><TransitionLink href={`/${country ?? 'kuwait'}/services/annual-compliance`} tabIndex={open ? 0 : -1}>Annual compliance</TransitionLink></li>
+              </ul>
+            </div>
+            <div className="menu__lang">
+              <p className="eyebrow eyebrow--small">Language</p>
+              <div className="menu__lang-options" role="group" aria-label="Language">
+                <span className="menu__lang-option is-active" aria-current="true">
+                  EN <span>English</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
