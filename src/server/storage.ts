@@ -7,14 +7,17 @@ import path from 'node:path';
  * Image storage. Two drivers:
  *  - local (default): files under UPLOAD_DIR (./storage/uploads), served by the /uploads/[...path] route.
  *    Use on a single server or with a persistent volume.
+ *  - blob: Vercel Blob. Add a Blob store under Storage in your Vercel project (BLOB_READ_WRITE_TOKEN is added for you).
  *  - s3: any S3-compatible bucket (AWS S3, Cloudflare R2, DigitalOcean Spaces). Set S3_BUCKET, S3_REGION,
  *    S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_PUBLIC_URL and optionally S3_ENDPOINT. Use for several servers or serverless.
  */
 export const UPLOAD_DIR = path.resolve(process.env.UPLOAD_DIR ?? 'storage/uploads');
-const driver = process.env.S3_BUCKET ? 's3' : 'local';
+// Vercel Blob (set automatically when you add a Blob store in Vercel) > S3-compatible bucket > local disk
+const driver = process.env.BLOB_READ_WRITE_TOKEN ? 'blob' : process.env.S3_BUCKET ? 's3' : 'local';
 
 export const ALLOWED_TYPES: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/avif': 'avif', 'image/gif': 'gif' };
-export const MAX_BYTES = 8 * 1024 * 1024;
+// Vercel limits a request to about 4.5 MB, so keep uploads under 4 MB there.
+export const MAX_BYTES = (driver === 'blob' ? 4 : 8) * 1024 * 1024;
 
 /** Check the file's first bytes really are the image type it claims (SVG is not accepted, as it can carry scripts). */
 export function sniffImage(buf: Buffer): string | null {
@@ -40,6 +43,11 @@ async function s3() {
 export async function storeImage(buf: Buffer, mime: string) {
   const now = new Date();
   const key = `${now.getUTCFullYear()}/${String(now.getUTCMonth() + 1).padStart(2, '0')}/${randomUUID()}.${ALLOWED_TYPES[mime]}`;
+  if (driver === 'blob') {
+    const { put } = await import('@vercel/blob');
+    const blob = await put(`uploads/${key}`, buf, { access: 'public', contentType: mime, addRandomSuffix: false, cacheControlMaxAge: 31536000 });
+    return { key: blob.url, url: blob.url }; // the blob's address is its key
+  }
   if (driver === 's3') {
     const { client, PutObjectCommand } = await s3();
     await client.send(new PutObjectCommand({ Bucket: process.env.S3_BUCKET, Key: key, Body: buf, ContentType: mime, CacheControl: 'public, max-age=31536000, immutable' }));
@@ -53,7 +61,10 @@ export async function storeImage(buf: Buffer, mime: string) {
 
 export async function deleteImage(key: string) {
   try {
-    if (driver === 's3') {
+    if (key.startsWith('https://')) {
+      const { del } = await import('@vercel/blob');
+      await del(key);
+    } else if (driver === 's3') {
       const { client, DeleteObjectCommand } = await s3();
       await client.send(new DeleteObjectCommand({ Bucket: process.env.S3_BUCKET, Key: key }));
     } else {

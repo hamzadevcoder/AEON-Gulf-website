@@ -1,4 +1,5 @@
 import { SplitReveal } from '@/components/motion/SplitReveal';
+import { getT } from '@/i18n/server';
 import { Fade } from '@/components/motion/Fade';
 import { Eyebrow } from '@/components/ui/Eyebrow';
 import { TransitionLink } from '@/components/motion/TransitionLink';
@@ -33,28 +34,29 @@ function linkEmail(text: string) {
 }
 
 /** Policy page: light hero, sticky contents list on the left, numbered sections on the right. */
-export function LegalPage({ policy }: { policy: Policy }) {
+export async function LegalPage({ policy }: { policy: Policy }) {
+  const t = await getT();
   return (
     <>
       <section className="section tone-white legal-hero" aria-labelledby="legal-title">
         <div className="grid4">
           <div className="legal-hero__text">
             <Fade load y={20}>
-              <Eyebrow>Legal</Eyebrow>
+              <Eyebrow>{t('legalPage.eyebrow')}</Eyebrow>
             </Fade>
             <SplitReveal as="h1" load className="h-hero" id="legal-title">
               {policy.title}
             </SplitReveal>
             <Fade load as="p" className="legal-hero__meta" delay={0.2}>
-              Effective date: {policy.effective}. Last updated: {policy.effective}.
+              {t('legalPage.effective', { date: policy.effective })}
             </Fade>
           </div>
-          <Fade load as="nav" className="legal-hero__others" aria-label="Other policies" delay={0.3}>
+          <Fade load as="nav" className="legal-hero__others" aria-label={t('legalPage.others')} delay={0.3}>
             {legal
               .filter((l) => l.href !== `/${policy.slug}`)
               .map((l) => (
                 <TransitionLink key={l.href} href={l.href} className="arrow-link">
-                  {l.label}
+                  {t(l.key)}
                 </TransitionLink>
               ))}
           </Fade>
@@ -62,8 +64,8 @@ export function LegalPage({ policy }: { policy: Policy }) {
       </section>
       <section className="section tone-ice legal-body">
         <div className="grid4">
-          <nav className="legal-toc" aria-label="On this page">
-            <p className="eyebrow eyebrow--small">On this page</p>
+          <nav className="legal-toc" aria-label={t('common.onThisPage')}>
+            <p className="eyebrow eyebrow--small">{t('common.onThisPage')}</p>
             <ol>
               {policy.sections.map((s) => (
                 <li key={s.title}>

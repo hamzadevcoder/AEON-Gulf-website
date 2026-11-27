@@ -1,4 +1,5 @@
 import { Stairs } from '@/components/motion/Stairs';
+import { getT } from '@/i18n/server';
 import { SplitReveal } from '@/components/motion/SplitReveal';
 import { Fade } from '@/components/motion/Fade';
 import { Eyebrow } from '@/components/ui/Eyebrow';
@@ -10,7 +11,8 @@ import type { Blocks } from '@/content/blocks';
 import type { Country } from '@/server/content';
 
 /** Sticky intro on the left, tall country cards scrolling past on the right (the reference's case studies). */
-export function Countries({ text, countries }: { text: Blocks['home.countries']; countries: Country[] }) {
+export async function Countries({ text, countries }: { text: Blocks['home.countries']; countries: Country[] }) {
+  const t = await getT();
   return (
     <section id="countries" className="section tone-white countries" aria-labelledby="countries-title">
       <Stairs />
@@ -35,7 +37,7 @@ export function Countries({ text, countries }: { text: Blocks['home.countries'];
                 {c.code}
               </span>
               <span className="country-card__link arrow-link">
-                <ArrowIcon /> View services
+                <ArrowIcon /> {t('common.viewServices')}
               </span>
               <div className="country-card__body">
                 <h3 className="h-card">{c.name}</h3>

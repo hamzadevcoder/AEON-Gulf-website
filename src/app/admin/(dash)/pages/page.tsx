@@ -24,7 +24,7 @@ export default async function PagesHub({ searchParams }: { searchParams: Promise
       <div className="adm-head">
         <div>
           <h1>Pages</h1>
-          <p>Click a page to edit what is on it. Create new pages from ready-made sections.</p>
+          <p>Click a page to edit what is on it. Create new pages from ready-made sections. Every page has an English and an Arabic version: use the language tabs inside each editor.</p>
         </div>
         <Link className="adm-btn adm-btn--primary" href="/admin/pages/new">
           + New page
@@ -76,6 +76,7 @@ export default async function PagesHub({ searchParams }: { searchParams: Promise
       <h2 className="adm-group-title">More content</h2>
       <div className="adm-pagegrid">
         {[
+          { href: '/admin/site', name: 'Header & Footer', desc: 'The top bar, the open menu and the footer, in English and Arabic.' },
           { href: '/admin/services', name: 'Service pages', desc: 'All 96 service pages: text, FAQs, steps and SEO.' },
           { href: '/admin/countries', name: 'Countries', desc: 'Kuwait, Qatar and Saudi Arabia: introductions, facts, authorities and offices.' },
           { href: '/admin/guides', name: 'Guides', desc: 'The Insights articles.' },

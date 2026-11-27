@@ -90,7 +90,7 @@ export function TextField({ name, label, help, defaultValue, required, max, type
   );
 }
 
-export function TextArea({ name, label, help, defaultValue, required, max, rows = 4 }: Common & { rows?: number }) {
+export function TextArea({ name, label, help, defaultValue, required, max, rows = 4, placeholder }: Common & { rows?: number; placeholder?: string }) {
   const error = useFieldError(name);
   const [len, setLen] = useState(String(defaultValue ?? '').length);
   return (
@@ -99,7 +99,7 @@ export function TextArea({ name, label, help, defaultValue, required, max, rows 
         {label}
         {required && ' *'}
       </span>
-      <textarea name={name} rows={rows} defaultValue={defaultValue ?? ''} required={required} aria-invalid={error ? true : undefined} onChange={(e) => setLen(e.target.value.length)} />
+      <textarea name={name} rows={rows} defaultValue={defaultValue ?? ''} placeholder={placeholder} required={required} aria-invalid={error ? true : undefined} onChange={(e) => setLen(e.target.value.length)} />
       {help && <small>{help}</small>}
       {max && <small className={`adm-field__count ${len > max ? 'is-over' : ''}`}>{`${len} / ${max}`}</small>}
       {error && <span className="adm-field__error">{error}</span>}

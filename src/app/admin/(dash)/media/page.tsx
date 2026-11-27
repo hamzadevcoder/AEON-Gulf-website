@@ -3,6 +3,7 @@ import { requirePermission } from '@/server/auth';
 import { requireDb, schema } from '@/server/db';
 import { sources, defaultImage, type ImageKey } from '@/content/images';
 import { fmtBytes, fmtDate } from '@/lib/format';
+import { MAX_BYTES } from '@/server/storage';
 import { ActionForm, ConfirmActionForm, ConfirmForm, TextField } from '@/components/admin/Form';
 import { deleteMedia, replaceSlot, resetSlot, updateMediaAlt, uploadMedia } from '../../_actions/media';
 
@@ -23,7 +24,7 @@ export default async function MediaAdmin() {
       <div className="adm-head">
         <div>
           <h1>Images</h1>
-          <p>Replace any photo on the website, or upload images to use in guides. JPG, PNG, WebP, AVIF or GIF, up to 8 MB.</p>
+          <p>Replace any photo on the website, or upload images to use in guides. {`JPG, PNG, WebP, AVIF or GIF, up to ${MAX_BYTES / 1048576} MB.`}</p>
         </div>
       </div>
 

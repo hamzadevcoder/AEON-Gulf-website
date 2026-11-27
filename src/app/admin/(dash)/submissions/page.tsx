@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { and, count, desc, eq, ilike, or, type SQL } from 'drizzle-orm';
+import { and, count, desc, eq, gte, ilike, or, type SQL } from 'drizzle-orm';
 import { requirePermission } from '@/server/auth';
 import { requireDb, schema } from '@/server/db';
 import { can } from '@/lib/permissions';
@@ -42,6 +42,7 @@ export default async function Submissions({ searchParams }: { searchParams: Prom
       .offset((page - 1) * PAGE),
     db.select({ total: count() }).from(s).where(cond),
   ]);
+  const [{ spamCount }] = await db.select({ spamCount: count() }).from(s).where(and(eq(s.status, 'spam'), gte(s.createdAt, new Date(Date.now() - 30 * 86_400_000))));
   const pages = Math.max(1, Math.ceil(total / PAGE));
   const link = (patch: Partial<Search>) => {
     const p = new URLSearchParams();
@@ -66,6 +67,15 @@ export default async function Submissions({ searchParams }: { searchParams: Prom
         )}
       </div>
       {sp.deleted && <p className="adm-notice adm-notice--ok">Inquiry deleted.</p>}
+      {spamCount > 0 && status !== 'spam' && (
+        <p className="adm-notice adm-notice--info" style={{ marginBottom: 12 }}>
+          {`${spamCount} inquir${spamCount === 1 ? 'y was' : 'ies were'} caught by the spam filter in the last 30 days (no email was sent for them). `}
+          <Link className="adm-link" href="/admin/submissions?status=spam">
+            Review them
+          </Link>
+          {' '}in case a real enquiry was caught: open it and change its status.
+        </p>
+      )}
       <nav className="adm-tabs" aria-label="Filter by type">
         <Link href={link({ type: undefined, page: undefined })} aria-current={!type ? 'true' : undefined}>
           All types

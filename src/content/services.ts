@@ -1,6 +1,6 @@
 import data from './services.json';
 
-export type Service = (typeof data)[number];
+export type Service = (typeof data)[number] & { /** false on the Arabic site when the full Arabic page has not been written yet */ translated?: boolean };
 export type CountrySlug = 'kuwait' | 'qatar' | 'saudi-arabia';
 export type GroupKey = 'corporate' | 'pro' | 'finance' | 'relocation';
 
@@ -52,7 +52,9 @@ export function catalogue(list: Service[]) {
 
 /** "Annual Compliance Services in Kuwait" → ["Annual Compliance Services", "in Kuwait"] for two-tone headings. */
 export function splitHeading(heading: string, countryName: string) {
-  const marker = ` in ${countryName}`;
-  const i = heading.lastIndexOf(marker);
-  return i > 0 ? [heading.slice(0, i), heading.slice(i + 1)] : [heading, ''];
+  for (const marker of [` in ${countryName}`, ` في ${countryName}`]) {
+    const i = heading.lastIndexOf(marker);
+    if (i > 0) return [heading.slice(0, i), heading.slice(i + 1)];
+  }
+  return [heading, ''];
 }

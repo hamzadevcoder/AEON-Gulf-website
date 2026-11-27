@@ -1,4 +1,5 @@
 import { Stairs } from '@/components/motion/Stairs';
+import { getT } from '@/i18n/server';
 import { SplitReveal } from '@/components/motion/SplitReveal';
 import { ScrubText } from '@/components/motion/ScrubText';
 import { Fade } from '@/components/motion/Fade';
@@ -27,6 +28,7 @@ const isDark = (d: D) => d.tone === 'dark';
 
 /** A page built in the dashboard: its sections, in order, drawn with the site's existing design. */
 export async function CustomPage({ page }: { page: Page }) {
+  const t = await getT();
   const sections = page.sections.filter((x) => !x.hidden);
   const needsForm = sections.some((x) => x.type === 'form' && x.data.formType !== 'contact');
   const options = needsForm ? await getQuoteOptions() : null;
@@ -62,7 +64,7 @@ export async function CustomPage({ page }: { page: Page }) {
             const img = s(d.image) ? imageFor(s(d.image), s(d.title)) : undefined;
             return (
               <PageHero key={key} eyebrow={s(d.eyebrow)} title={s(d.title)} titleSoft={s(d.titleSoft) || undefined} subtitle={s(d.subtitle) || undefined} image={img}
-                crumbs={[{ label: 'Home', href: '/' }, { label: page.title }]}>
+                crumbs={[{ label: t('common.home'), href: '/' }, { label: page.title }]}>
                 {s(d.buttonLabel) && s(d.buttonLink) ? <Button href={s(d.buttonLink)} variant="light">{s(d.buttonLabel)}</Button> : null}
               </PageHero>
             );
@@ -125,7 +127,7 @@ export async function CustomPage({ page }: { page: Page }) {
                         <p>{s(c.text)}</p>
                         {s(c.link) && (
                           <span className="related-card__go">
-                            <ArrowIcon /> {s(c.linkLabel) || 'Learn more'}
+                            <ArrowIcon /> {s(c.linkLabel) || t('common.learnMore')}
                           </span>
                         )}
                       </>
@@ -209,7 +211,7 @@ export async function CustomPage({ page }: { page: Page }) {
                     <Fade as="p" className="cta__text">{s(d.text)}</Fade>
                   </div>
                   <Fade className="svc-quote__form">
-                    {d.formType === 'contact' || !options ? <ContactForm /> : <QuoteForm options={options} compact title="Request a quote" />}
+                    {d.formType === 'contact' || !options ? <ContactForm /> : <QuoteForm options={options} compact title={t('form.requestQuote')} />}
                   </Fade>
                 </div>
               </section>
@@ -217,7 +219,7 @@ export async function CustomPage({ page }: { page: Page }) {
           case 'cta':
             return (
               <CtaBand key={key} eyebrow={s(d.eyebrow) || undefined} heading={s(d.heading)} text={s(d.text)}
-                primary={{ label: s(d.primaryLabel) || 'Get a quote', href: s(d.primaryLink) || '/quote' }}
+                primary={{ label: s(d.primaryLabel) || t('common.getQuote'), href: s(d.primaryLink) || '/quote' }}
                 secondary={s(d.secondaryLabel) && s(d.secondaryLink) ? { label: s(d.secondaryLabel), href: s(d.secondaryLink) } : undefined} />
             );
           default:

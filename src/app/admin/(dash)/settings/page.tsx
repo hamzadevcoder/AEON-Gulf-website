@@ -1,12 +1,11 @@
 import { asc, desc, eq } from 'drizzle-orm';
 import { requirePermission } from '@/server/auth';
 import { requireDb, schema } from '@/server/db';
-import { getContact } from '@/server/content';
 import { emailConfigured } from '@/server/email';
 import { fmtDate } from '@/lib/format';
 import { typeLabels, formKinds } from '@/lib/submissions';
 import { ActionForm, Checkbox, ConfirmForm, TextField } from '@/components/admin/Form';
-import { addRecipient, deleteRecipient, saveContactSettings, saveEmailSettings, testEmail, updateRecipient } from '../../_actions/settings';
+import { addRecipient, deleteRecipient, saveEmailSettings, testEmail, updateRecipient } from '../../_actions/settings';
 
 export const metadata = { title: 'Settings & emails' };
 export const dynamic = 'force-dynamic';
@@ -14,11 +13,10 @@ export const dynamic = 'force-dynamic';
 export default async function SettingsPage() {
   const me = await requirePermission('settings.manage', 'page');
   const db = requireDb();
-  const [recipients, [emailRow], log, contact] = await Promise.all([
+  const [recipients, [emailRow], log] = await Promise.all([
     db.select().from(schema.notificationRecipients).orderBy(asc(schema.notificationRecipients.createdAt)),
     db.select().from(schema.settings).where(eq(schema.settings.key, 'email')),
     db.select().from(schema.emailLog).orderBy(desc(schema.emailLog.createdAt)).limit(15),
-    getContact(),
   ]);
   const sender = (emailRow?.value as { fromName?: string; fromAddress?: string }) ?? {};
 
@@ -103,13 +101,9 @@ export default async function SettingsPage() {
 
       <section className="adm-card" style={{ marginTop: 16 }}>
         <h2>Website contact details</h2>
-        <p className="adm-card__hint">Shown in the header menu, footer, contact page and quote page. Office details are edited per country.</p>
-        <ActionForm action={saveContactSettings}>
-          <div className="adm-row">
-            <TextField name="email" label="Email" type="email" defaultValue={contact.email} required />
-            <TextField name="phone" label="Phone" defaultValue={contact.phone} required />
-          </div>
-        </ActionForm>
+        <p className="adm-card__hint">
+          The public email and phone number now live with the header and footer: <a className="adm-link" href="/admin/site?open=contact">Header &amp; Footer, Contact details</a>.
+        </p>
       </section>
 
       <section className="adm-card">

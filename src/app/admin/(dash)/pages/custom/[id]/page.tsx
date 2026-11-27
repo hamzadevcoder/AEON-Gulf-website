@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { LangTabs, ArabicArea } from '@/components/admin/LangTabs';
+import { savePageAr } from '../../../../_actions/i18n';
 import { notFound } from 'next/navigation';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
@@ -20,18 +22,21 @@ const teaser = (d: Record<string, unknown>) => {
   return '';
 };
 
-export default async function EditCustomPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ open?: string; created?: string }> }) {
+export default async function EditCustomPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ open?: string; created?: string; lang?: string }> }) {
   await requirePermission('content.edit', 'page');
   const { id } = await params;
   if (!z.string().uuid().safeParse(id).success) notFound();
   const [page] = await requireDb().select().from(schema.pages).where(eq(schema.pages.id, id));
   if (!page) notFound();
   const sp = await searchParams;
+  const lang = sp.lang === 'ar' ? 'ar' : 'en';
+  const ar = (page.ar ?? {}) as { title?: string; metaTitle?: string; metaDescription?: string };
   const options = await imageOptions();
   const hid = (sectionId: string) => (
     <>
       <input type="hidden" name="id" value={page.id} />
       <input type="hidden" name="sectionId" value={sectionId} />
+      <input type="hidden" name="lang" value={lang} />
     </>
   );
 
@@ -48,7 +53,7 @@ export default async function EditCustomPage({ params, searchParams }: { params:
           <p>{`/${page.slug} · last edited ${fmtDate(page.updatedAt)}`}</p>
         </div>
         {page.published ? (
-          <a className="adm-btn adm-btn--ghost" href={`/${page.slug}`} target="_blank" rel="noreferrer">
+          <a className="adm-btn adm-btn--ghost" href={lang === 'ar' ? `/ar/${page.slug}` : `/${page.slug}`} target="_blank" rel="noreferrer">
             View page ↗
           </a>
         ) : null}
@@ -56,6 +61,12 @@ export default async function EditCustomPage({ params, searchParams }: { params:
       {sp.created && <p className="adm-notice adm-notice--ok">Page created as a draft. Edit the sections, then tick “Published” in Page settings to put it on the website.</p>}
       {!page.published && !sp.created && <p className="adm-notice adm-notice--info">This page is a draft and is not visible on the website. Tick “Published” in Page settings when you are ready.</p>}
 
+      <LangTabs href={`/admin/pages/custom/${page.id}`} lang={lang} arStatus={ar.title ? 'translated' : undefined} />
+      {lang === 'ar' && (
+        <p className="adm-hint">
+          Arabic version (yourwebsite.com/ar/{page.slug}). The sections and their order are shared with English; open each section to write its Arabic text. Sections without Arabic show the English text on the Arabic page until translated.
+        </p>
+      )}
       <div className="adm-split">
         <div>
           <div className="adm-seclist">
@@ -71,7 +82,12 @@ export default async function EditCustomPage({ params, searchParams }: { params:
                   title={tpl.name}
                   summary={teaser(sec.data)}
                   open={sp.open === sec.id}
-                  badge={sec.hidden ? <span className="adm-badge adm-badge--off">Hidden</span> : undefined}
+                  badge={
+                    <>
+                      {sec.hidden && <span className="adm-badge adm-badge--off">Hidden</span>}
+                      {lang === 'ar' && <span className={`adm-badge ${sec.dataAr ? 'adm-badge--ar' : ''}`}>{sec.dataAr ? 'Arabic ✓' : 'Not translated'}</span>}
+                    </>
+                  }
                   tools={
                     <>
                       <form action={moveSection}>
@@ -100,7 +116,7 @@ export default async function EditCustomPage({ params, searchParams }: { params:
                           Copy
                         </button>
                       </form>
-                      <ConfirmForm action={deleteSection} confirm="Delete this section?" hidden={{ id: page.id, sectionId: sec.id }}>
+                      <ConfirmForm action={deleteSection} confirm="Delete this section?" hidden={{ id: page.id, sectionId: sec.id, lang }}>
                         <button className="adm-tool adm-tool--danger" type="submit" aria-label="Delete section" title="Delete section">
                           ✕
                         </button>
@@ -110,7 +126,13 @@ export default async function EditCustomPage({ params, searchParams }: { params:
                 >
                   <ActionForm action={saveSection} sticky submitLabel="Save section">
                     {hid(sec.id)}
-                    <FieldsEditor fields={tpl.fields} values={sec.data} imageOptions={options} />
+                    {lang === 'ar' ? (
+                      <ArabicArea>
+                        <FieldsEditor fields={tpl.fields} values={sec.dataAr ?? sec.data} imageOptions={options} />
+                      </ArabicArea>
+                    ) : (
+                      <FieldsEditor fields={tpl.fields} values={sec.data} imageOptions={options} />
+                    )}
                   </ActionForm>
                 </SectionCard>
               );
@@ -125,6 +147,7 @@ export default async function EditCustomPage({ params, searchParams }: { params:
                 <form action={addSection} key={t.type}>
                   <input type="hidden" name="id" value={page.id} />
                   <input type="hidden" name="type" value={t.type} />
+                  <input type="hidden" name="lang" value={lang} />
                   <button type="submit" className="adm-template">
                     <span className="adm-template__icon" aria-hidden="true">
                       {t.icon}
@@ -139,6 +162,20 @@ export default async function EditCustomPage({ params, searchParams }: { params:
         </div>
 
         <aside>
+          {lang === 'ar' ? (
+            <section className="adm-card">
+              <h2>Arabic page settings</h2>
+              <ActionForm action={savePageAr} submitLabel="Save Arabic settings">
+                <input type="hidden" name="id" value={page.id} />
+                <ArabicArea>
+                  <TextField name="title" label="Arabic page title" defaultValue={ar.title ?? ''} placeholder={page.title} />
+                  <TextField name="metaTitle" label="Arabic meta title" defaultValue={ar.metaTitle ?? ''} max={60} placeholder={page.metaTitle} />
+                  <TextArea name="metaDescription" label="Arabic meta description" defaultValue={ar.metaDescription ?? ''} max={160} rows={3} placeholder={page.metaDescription} />
+                </ArabicArea>
+                <small className="adm-muted">Address, publishing and menu settings are shared with English.</small>
+              </ActionForm>
+            </section>
+          ) : (
           <section className="adm-card">
             <h2>Page settings</h2>
             <ActionForm action={savePageSettings} submitLabel="Save settings">
@@ -152,6 +189,7 @@ export default async function EditCustomPage({ params, searchParams }: { params:
               <TextArea name="metaDescription" label="Meta description" defaultValue={page.metaDescription} max={160} rows={3} help="The text shown under the title in Google." />
             </ActionForm>
           </section>
+          )}
           <section className="adm-card">
             <h2>Delete page</h2>
             <p className="adm-card__hint">Removes this page and all its sections permanently.</p>

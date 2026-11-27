@@ -15,6 +15,13 @@
       "when": 1795618045228,
       "tag": "0001_custom_pages",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795693668119,
+      "tag": "0002_arabic",
+      "breakpoints": true
     }
   ]
 }

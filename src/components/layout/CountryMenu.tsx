@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useT } from '@/i18n/client';
+import { stripLocale } from '@/i18n/config';
 import { usePathname } from 'next/navigation';
 import { TransitionLink } from '@/components/motion/TransitionLink';
 import { Flag } from '@/components/ui/Flag';
@@ -10,7 +12,8 @@ import type { CountryLink } from './types';
 /** Header dropdown for switching country, shown with flags (like the language chip). */
 export function CountryMenu({ className = '', countries }: { className?: string; countries: CountryLink[] }) {
   const pathname = usePathname();
-  const current = countries.find((c) => c.slug === countryFromPath(pathname));
+  const t = useT();
+  const current = countries.find((c) => c.slug === countryFromPath(stripLocale(pathname)));
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -36,7 +39,7 @@ export function CountryMenu({ className = '', countries }: { className?: string;
     <div ref={ref} className={`country-menu ${open ? 'is-open' : ''} ${className}`}>
       <button type="button" className="chip country-menu__toggle" aria-expanded={open} aria-haspopup="true" aria-controls="country-menu-list" onClick={() => setOpen((v) => !v)}>
         {current ? <Flag country={current.slug} /> : <GlobeIcon />}
-        <span className="country-menu__label">{current ? current.name : 'Countries'}</span>
+        <span className="country-menu__label">{current ? current.name : t('header.countries')}</span>
         <svg className="country-menu__chev" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
           <path d="M1.5 3.5 5 7l3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.3" />
         </svg>

@@ -17,11 +17,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
   }
   const all: (NavItem & { show: boolean })[] = [
     { href: '/admin', label: 'Overview', show: true },
-    { href: '/admin/submissions', label: 'Inquiries', count: newCount, group: 'Inquiries', show: can(user.role, 'submissions.view') },
-    { href: '/admin/pages', label: 'Pages', group: 'Website', show: can(user.role, 'content.edit') },
-    { href: '/admin/services', label: 'Services', group: 'Website', show: can(user.role, 'content.edit') },
-    { href: '/admin/guides', label: 'Guides', group: 'Website', show: can(user.role, 'content.edit') },
-    { href: '/admin/media', label: 'Images', group: 'Website', show: can(user.role, 'media.manage') },
+    { href: '/admin/submissions', label: 'Inquiries', count: newCount, show: can(user.role, 'submissions.view') },
+    { href: '/admin/pages', label: 'Pages', group: 'Content', show: can(user.role, 'content.edit') },
+    { href: '/admin/services', label: 'Services', group: 'Content', show: can(user.role, 'content.edit') },
+    { href: '/admin/guides', label: 'Guides', group: 'Content', show: can(user.role, 'content.edit') },
+    { href: '/admin/media', label: 'Images', group: 'Content', show: can(user.role, 'media.manage') },
+    { href: '/admin/site', label: 'Header & Footer', group: 'Site', show: can(user.role, 'content.edit') },
+    { href: '/admin/translations', label: 'Interface text', group: 'Site', show: can(user.role, 'content.edit') },
     { href: '/admin/settings', label: 'Settings & emails', group: 'Administration', show: can(user.role, 'settings.manage') },
     { href: '/admin/users', label: 'Users & roles', group: 'Administration', show: can(user.role, 'users.manage') },
     { href: '/admin/audit', label: 'Audit log', group: 'Administration', show: can(user.role, 'audit.view') },

@@ -42,7 +42,7 @@ export function ArrowLink({ href, children, className = '' }: { href: string; ch
 export function ArrowIcon({ direction = 'right' }: { direction?: 'right' | 'left' | 'up' | 'down' }) {
   const rot = { right: 0, down: 90, left: 180, up: 270 }[direction];
   return (
-    <svg className="arrow-icon" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" style={{ transform: `rotate(${rot}deg)` }}>
+    <svg className={`arrow-icon${direction === 'left' || direction === 'right' ? ' arrow-icon--h' : ''}`} width="12" height="12" viewBox="0 0 12 12" aria-hidden="true" style={{ transform: `rotate(${rot}deg)` }}>
       <path d="M1 6h9.5M6.5 2 10.5 6l-4 4" fill="none" stroke="currentColor" strokeWidth="1.2" />
     </svg>
   );

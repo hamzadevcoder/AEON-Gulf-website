@@ -5,12 +5,12 @@
  */
 
 export const nav = [
-  { label: 'Home', href: '/' },
-  { label: 'Our Company', href: '/about' },
-  { label: 'Services', href: '/services' },
-  { label: 'Insights', href: '/insights' },
-  { label: 'Get a quote', href: '/quote' },
-  { label: 'Contact', href: '/contact' },
+  { label: 'Home', href: '/', key: 'nav.home' },
+  { label: 'Our Company', href: '/about', key: 'nav.about' },
+  { label: 'Services', href: '/services', key: 'nav.services' },
+  { label: 'Insights', href: '/insights', key: 'nav.insights' },
+  { label: 'Get a quote', href: '/quote', key: 'nav.quote' },
+  { label: 'Contact', href: '/contact', key: 'nav.contact' },
 ];
 
 export const countrySlugs = ['kuwait', 'qatar', 'saudi-arabia'] as const;
@@ -23,13 +23,13 @@ export const countryFromPath = (path: string) => countrySlugs.find((c) => path =
  * header country dropdown and the footer's Markets list); on a country page the quote link
  * pre-selects that country.
  */
-export function navFor(path: string) {
+export function navFor<T extends { href: string }>(path: string, items: T[] = nav as unknown as T[]) {
   const current = countryFromPath(path);
-  return nav.map((n) => (n.href === '/quote' && current ? { ...n, href: `/quote?country=${current}` } : n));
+  return items.map((n) => (n.href === '/quote' && current ? { ...n, href: `/quote?country=${current}` } : n));
 }
 
 /** Put pages created in the dashboard (with "show in menu" on) into the menu, just before "Get a quote". */
-export function withExtraNav<T extends { href: string; label: string }>(items: T[], extra: { href: string; label: string }[]) {
+export function withExtraNav<T extends { href: string; label: string; key?: string }>(items: T[], extra: { href: string; label: string }[]) {
   if (!extra.length) return items;
   const i = items.findIndex((n) => n.href.startsWith('/quote'));
   const add = extra as unknown as T[];
@@ -37,9 +37,9 @@ export function withExtraNav<T extends { href: string; label: string }>(items: T
 }
 
 export const legal = [
-  { label: 'Privacy Policy', href: '/privacy-policy' },
-  { label: 'Terms and Conditions', href: '/terms-and-conditions' },
-  { label: 'Cookies Policy', href: '/cookies-policy' },
+  { label: 'Privacy Policy', href: '/privacy-policy', key: 'legal.privacy' },
+  { label: 'Terms and Conditions', href: '/terms-and-conditions', key: 'legal.terms' },
+  { label: 'Cookies Policy', href: '/cookies-policy', key: 'legal.cookies' },
 ];
 
 export const contact = {

@@ -171,3 +171,30 @@ Saving in the dashboard updates the public website immediately (cached pages are
 ### Tested
 
 Against PostgreSQL 16 with a local SMTP server: form validation, storage and notification emails (with reply-to set to the visitor); honeypot and per-IP rate limits; login lockout after 5 failures; inquiry status, assignment, notes, bulk update and CSV export; content edits appearing on the live site (page text, services, new and hidden services, image replacement); rejection of non-image uploads; role restrictions for each role, including direct server-action calls; deactivated users signed out; last-administrator protection; every dashboard page at phone width; and the public site's SEO and layout checks.
+
+## Languages (English and Arabic)
+
+- English lives at the normal addresses (`/about`); Arabic under `/ar` (`/ar/about`), fully right to left, with the IBM Plex Sans Arabic font. A language switch is in the header (and in the menu on phones).
+- `src/middleware.ts` serves both languages from one set of pages in `src/app/[lang]`. Interface text (buttons, labels, form messages, page titles) is in `src/i18n/dict.ts`; built-in Arabic page content is in `src/content/ar.ts`.
+- **Dashboard:** every editor (pages, services, countries, guides, legal pages) has **English | العربية** tabs. Arabic text is stored separately and never changes the English site. **Website > Interface text** edits every button and label in both languages.
+- **Services:** the Services list shows which services have a full Arabic page. Until one does, its Arabic address shows a short Arabic summary with a quote form, and is kept out of Google (noindex, not in the sitemap, no hreflang). Guides appear in Arabic once their related service is translated.
+- **SEO:** each page declares its English and Arabic versions to Google (hreflang), and the sitemap lists both.
+- Inquiries record which language the visitor used.
+- Have the Arabic reviewed by a native speaker, and the Arabic legal pages by the client's legal adviser, before launch.
+
+After updating, run `npm run db:migrate` (adds the Arabic columns) before deploying.
+
+## Header, menu, footer and language dropdown
+
+- **Dashboard > Site > Header & Footer** edits, in English and Arabic: the header button (text, link, show/hide), the country and language dropdowns (show/hide), the main menu links and "Popular services" list (add, rename, reorder, remove), the footer description, tagline, newsletter text, links, legal links, social links, copyright line, and the public email and phone. Defaults are the original site; "Restore original" returns a section to them. Use `{country}` in a link to open the page for the country the visitor is on.
+- The language switch is a dropdown in the header (on phones and tablets it is in the open menu).
+- Navigation is stored in the `navigation` setting; footer text in the `footer` and `ar:footer` page blocks.
+
+## Forms and spam
+
+- Every form shows which fields need attention, moves the cursor to the first one, and accepts phone numbers typed with Arabic digits.
+- The hidden anti-spam field is named `hp_ref`. If it is ever filled (for example by browser autofill) the inquiry is **kept** but marked as spam and no email is sent, so a real inquiry is never lost. The Inquiries page tells you how many were caught, with a link to review them.
+
+## Arabic Insights
+
+- The three guides and the services they are built from (Kuwait branch formation, Qatar annual compliance, Saudi bank account opening) have built-in Arabic (`src/content/ar-services.ts`, `ar.ts`), so the Insights section, listing and guide pages appear on the Arabic site. Further services and guides are translated from the dashboard (Arabic tab).

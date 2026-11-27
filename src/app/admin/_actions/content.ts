@@ -23,12 +23,13 @@ export async function saveBlock(_prev: ActionState, fd: FormData) {
     const def = blockDef(str(fd, 'key'));
     if (!def) throw new UserError('Unknown section.');
     const value = fieldsSchema(def.fields).parse(readFields(fd, def.fields));
+    const key = str(fd, 'lang') === 'ar' ? `ar:${def.key}` : def.key;
     const d = requireDb();
     await d
       .insert(schema.contentBlocks)
-      .values({ key: def.key, value, updatedBy: me.id })
+      .values({ key, value, updatedBy: me.id })
       .onConflictDoUpdate({ target: schema.contentBlocks.key, set: { value, updatedBy: me.id, updatedAt: new Date() } });
-    await audit(me.id, 'block.save', 'content_block', def.key);
+    await audit(me.id, 'block.save', 'content_block', key);
     refreshSite();
     return { ok: true, message: 'Saved. The website has been updated.' };
   });
@@ -37,11 +38,12 @@ export async function saveBlock(_prev: ActionState, fd: FormData) {
 export async function resetBlock(fd: FormData) {
   const me = await requirePermission('content.edit');
   const key = str(fd, 'key');
-  await requireDb().delete(schema.contentBlocks).where(eq(schema.contentBlocks.key, key));
-  await audit(me.id, 'block.reset', 'content_block', key);
+  const ar = str(fd, 'lang') === 'ar';
+  await requireDb().delete(schema.contentBlocks).where(eq(schema.contentBlocks.key, ar ? `ar:${key}` : key));
+  await audit(me.id, 'block.reset', 'content_block', ar ? `ar:${key}` : key);
   refreshSite();
   const group = blockDef(key)?.page ?? 'Home';
-  redirect(`/admin/pages/${builtinSlugForGroup(group)}?open=${encodeURIComponent(key)}&reset=1`);
+  redirect(`/admin/pages/${builtinSlugForGroup(group)}?open=${encodeURIComponent(key)}&reset=1${ar ? '&lang=ar' : ''}`);
 }
 
 // ------------------------------------------------------------------ Services

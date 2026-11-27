@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { asc } from 'drizzle-orm';
 import { requirePermission } from '@/server/auth';
+import { isServiceTranslated } from '@/server/content';
 import { requireDb, schema } from '@/server/db';
 import { groupInfo, groupOrder, servicePath } from '@/content/services';
 import { ConfirmForm } from '@/components/admin/Form';
@@ -14,7 +15,7 @@ export default async function ServicesAdmin({ searchParams }: { searchParams: Pr
   const db = requireDb();
   const [rows, countries] = await Promise.all([
     db
-      .select({ id: schema.services.id, country: schema.services.country, slug: schema.services.slug, name: schema.services.name, group: schema.services.group, published: schema.services.published, updatedAt: schema.services.updatedAt })
+      .select({ id: schema.services.id, country: schema.services.country, slug: schema.services.slug, name: schema.services.name, group: schema.services.group, published: schema.services.published, ar: schema.services.ar, updatedAt: schema.services.updatedAt })
       .from(schema.services)
       .orderBy(asc(schema.services.country), asc(schema.services.sort), asc(schema.services.name)),
     db.select().from(schema.countries).orderBy(asc(schema.countries.sort)),
@@ -28,7 +29,7 @@ export default async function ServicesAdmin({ searchParams }: { searchParams: Pr
       <div className="adm-head">
         <div>
           <h1>Services</h1>
-          <p>{`${rows.length} service pages across ${countries.length} countries. Changes go live as soon as you save.`}</p>
+          <p>{`${rows.length} service pages across ${countries.length} countries · ${rows.filter((r) => isServiceTranslated(r.ar, r.country, r.slug)).length} have a full Arabic page. Changes go live as soon as you save.`}</p>
         </div>
         <Link className="adm-btn adm-btn--primary" href={`/admin/services/new?country=${country}`}>
           New service
@@ -72,7 +73,8 @@ export default async function ServicesAdmin({ searchParams }: { searchParams: Pr
                         </span>
                       </td>
                       <td data-label="Status">
-                        <span className={`adm-badge adm-badge--${r.published ? 'on' : 'off'}`}>{r.published ? 'Published' : 'Hidden'}</span>
+                        <span className={`adm-badge adm-badge--${r.published ? 'on' : 'off'}`}>{r.published ? 'Published' : 'Hidden'}</span>{' '}
+                        {isServiceTranslated(r.ar, r.country, r.slug) ? <span className="adm-badge adm-badge--ar">Arabic ✓</span> : <span className="adm-badge">No Arabic yet</span>}
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         <div className="adm-actions" style={{ justifyContent: 'flex-end' }}>

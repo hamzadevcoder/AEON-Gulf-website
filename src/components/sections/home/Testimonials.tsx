@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useT } from '@/i18n/client';
 import { gsap, useGSAP, reducedMotion } from '@/lib/gsap';
 import { Stairs } from '@/components/motion/Stairs';
 import { SplitReveal } from '@/components/motion/SplitReveal';
@@ -16,6 +17,7 @@ import type { Blocks } from '@/content/blocks';
 /** Slider of charcoal cards; the active card is fully lit, the rest are dimmed. */
 export function Testimonials({ text }: { text: Blocks['home.testimonials'] }) {
   const testimonials = text.items;
+  const tt = useT();
   const ref = useRef<HTMLElement>(null);
   const track = useRef<HTMLDivElement>(null);
   // Start on the second card so there is a card on each side of the centred one.
@@ -91,14 +93,14 @@ export function Testimonials({ text }: { text: Blocks['home.testimonials'] }) {
               key={i}
               aria-hidden={i !== index}
               aria-roledescription="slide"
-              aria-label={`${i + 1} of ${testimonials.length}`}
+              aria-label={tt('common.ofTotal', { n: i + 1, total: testimonials.length })}
               onClick={() => i !== index && setIndex(i)}
             >
               <div className="t-card__media">
                 <Photo {...image(cardImages[i % cardImages.length])} />
                 <span className="t-card__chip">{t.topic}</span>
               </div>
-              <p className="t-card__logo">Client logo</p>
+              <p className="t-card__logo">{tt('common.clientLogo')}</p>
               <blockquote className="t-card__quote">{t.quote}</blockquote>
               <footer className="t-card__foot">
                 <span>
@@ -112,10 +114,10 @@ export function Testimonials({ text }: { text: Blocks['home.testimonials'] }) {
         </div>
       </div>
       <div className="testimonials__controls">
-        <button type="button" className="sq-btn" aria-label="Previous testimonial" disabled={index === 0} onClick={() => setIndex((i) => Math.max(0, i - 1))}>
+        <button type="button" className="sq-btn" aria-label={tt('common.prev')} disabled={index === 0} onClick={() => setIndex((i) => Math.max(0, i - 1))}>
           <ArrowIcon direction="left" />
         </button>
-        <button type="button" className="sq-btn" aria-label="Next testimonial" disabled={index === max} onClick={() => setIndex((i) => Math.min(max, i + 1))}>
+        <button type="button" className="sq-btn" aria-label={tt('common.next')} disabled={index === max} onClick={() => setIndex((i) => Math.min(max, i + 1))}>
           <ArrowIcon />
         </button>
       </div>

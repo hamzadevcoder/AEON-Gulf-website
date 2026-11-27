@@ -177,7 +177,6 @@ export const builtinPages = [
   { slug: 'countries', name: 'Country pages (shared text)', url: '/kuwait', group: 'Countries', description: 'Text shared by the Kuwait, Qatar and Saudi Arabia pages. Each country’s own details are under Countries.' },
   { slug: 'contact', name: 'Contact', url: '/contact', group: 'Contact', description: 'Heading and introduction of the contact page.' },
   { slug: 'quote', name: 'Get a quote', url: '/quote', group: 'Get a quote', description: 'Heading, introduction and “what happens next” steps.' },
-  { slug: 'footer', name: 'Footer (every page)', url: '/', group: 'Site-wide', description: 'Company description and tagline shown at the bottom of every page.' },
 ] as const;
 export const builtinPage = (slug: string) => builtinPages.find((p) => p.slug === slug);
 export const builtinSlugForGroup = (group: string) => builtinPages.find((p) => p.group === group)?.slug ?? 'home';

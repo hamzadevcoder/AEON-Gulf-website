@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { LangTabs } from '@/components/admin/LangTabs';
+import { GuideFormAr } from '@/components/admin/ArabicForms';
 import { notFound } from 'next/navigation';
 import { eq } from 'drizzle-orm';
 import { requirePermission } from '@/server/auth';
@@ -10,11 +12,12 @@ import { deleteGuide } from '../../../_actions/content';
 
 export const metadata = { title: 'Edit guide' };
 
-export default async function EditGuide({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ saved?: string }> }) {
+export default async function EditGuide({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ saved?: string; lang?: string }> }) {
   await requirePermission('content.edit', 'page');
   const { slug } = await params;
   const [row] = await requireDb().select().from(schema.guides).where(eq(schema.guides.slug, slug));
   if (!row) notFound();
+  const lang = (await searchParams).lang === 'ar' ? 'ar' : 'en';
   const data = await guideFormData();
   return (
     <>
@@ -39,9 +42,14 @@ export default async function EditGuide({ params, searchParams }: { params: Prom
         </div>
       </div>
       {(await searchParams).saved && <p className="adm-notice adm-notice--ok">Guide saved.</p>}
-      <div className="adm-card">
-        <GuideForm row={row} {...data} />
-      </div>
+      <LangTabs href={`/admin/guides/${row.slug}`} lang={lang} />
+      {lang === 'ar' ? (
+        <GuideFormAr row={row} />
+      ) : (
+        <div className="adm-card">
+          <GuideForm row={row} {...data} />
+        </div>
+      )}
     </>
   );
 }

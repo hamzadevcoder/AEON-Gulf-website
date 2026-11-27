@@ -1,4 +1,5 @@
 import { SplitReveal } from '@/components/motion/SplitReveal';
+import { getT } from '@/i18n/server';
 import { Fade } from '@/components/motion/Fade';
 import { Photo } from '@/components/ui/Photo';
 import { TransitionLink } from '@/components/motion/TransitionLink';
@@ -17,7 +18,8 @@ type Props = {
 };
 
 /** Dark full-bleed hero used by the services, country and service pages. */
-export function PageHero({ eyebrow, title, titleSoft, subtitle, image, crumbs, children, aside }: Props) {
+export async function PageHero({ eyebrow, title, titleSoft, subtitle, image, crumbs, children, aside }: Props) {
+  const t = await getT();
   return (
     <section className="section tone-black page-hero" data-tone="dark">
       {image && (
@@ -28,7 +30,7 @@ export function PageHero({ eyebrow, title, titleSoft, subtitle, image, crumbs, c
       )}
       <div className="page-hero__inner">
         {crumbs && (
-          <Fade load as="nav" className="crumbs" aria-label="Breadcrumb" y={14}>
+          <Fade load as="nav" className="crumbs" aria-label={t('common.breadcrumb')} y={14}>
             <ol>
               {crumbs.map((c, i) => (
                 <li key={i}>{c.href ? <TransitionLink href={c.href}>{c.label}</TransitionLink> : <span aria-current="page">{c.label}</span>}</li>

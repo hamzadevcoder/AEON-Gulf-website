@@ -11,7 +11,7 @@ import { sources } from '@/content/images';
 
 async function saveUpload(file: File, alt: string, userId: string) {
   if (!file || typeof file === 'string' || file.size === 0) throw new UserError('Choose an image to upload.');
-  if (file.size > MAX_BYTES) throw new UserError('Images must be 8 MB or smaller.');
+  if (file.size > MAX_BYTES) throw new UserError(`Images must be ${MAX_BYTES / 1048576} MB or smaller.`);
   const buf = Buffer.from(await file.arrayBuffer());
   const mime = sniffImage(buf);
   if (!mime) throw new UserError('Upload a JPG, PNG, WebP, AVIF or GIF image.');

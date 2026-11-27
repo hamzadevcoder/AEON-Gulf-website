@@ -1,4 +1,5 @@
 import { Stairs } from '@/components/motion/Stairs';
+import { getT } from '@/i18n/server';
 import { SplitReveal } from '@/components/motion/SplitReveal';
 import { Fade } from '@/components/motion/Fade';
 import { Eyebrow } from '@/components/ui/Eyebrow';
@@ -7,13 +8,14 @@ import { Button } from '@/components/ui/Button';
 type Props = { eyebrow?: string; heading: string; text: string; primary: { label: string; href: string }; secondary?: { label: string; href: string } };
 
 /** Closing call to action on a pale band ("Let's start" on the reference). */
-export function CtaBand({ eyebrow = 'Let’s start', heading, text, primary, secondary }: Props) {
+export async function CtaBand({ eyebrow, heading, text, primary, secondary }: Props) {
+  const t = await getT();
   return (
     <section className="section tone-ice cta" aria-label={heading}>
       <Stairs />
       <div className="grid4">
         <div className="cta__eyebrow">
-          <Eyebrow>{eyebrow}</Eyebrow>
+          <Eyebrow>{eyebrow ?? t('common.letsStart')}</Eyebrow>
         </div>
         <div className="cta__main">
           <SplitReveal as="h2" className="h-big">

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-type SubField = { name: string; label: string; type: 'text' | 'textarea' };
+type SubField = { name: string; label: string; type: 'text' | 'textarea'; rtl?: boolean };
 type Item = Record<string, string>;
 
 /**
@@ -55,9 +55,9 @@ export function ListEditor({
                 <label className="adm-field" key={f.name}>
                   <span>{f.label}</span>
                   {f.type === 'textarea' ? (
-                    <textarea rows={3} value={it[f.name] ?? ''} onChange={(e) => update(i, f.name, e.target.value)} />
+                    <textarea rows={3} dir={f.rtl ? 'rtl' : undefined} value={it[f.name] ?? ''} onChange={(e) => update(i, f.name, e.target.value)} />
                   ) : (
-                    <input type="text" value={it[f.name] ?? ''} onChange={(e) => update(i, f.name, e.target.value)} />
+                    <input type="text" dir={f.rtl ? 'rtl' : undefined} value={it[f.name] ?? ''} onChange={(e) => update(i, f.name, e.target.value)} />
                   )}
                 </label>
               ))}

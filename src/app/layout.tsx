@@ -19,7 +19,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, viewportFit: 'cover', themeColor: '#000000' };
 
 // Hides reveal targets before first paint; if motion never starts, everything is shown after 4.5s.
-const bootScript = `document.documentElement.classList.add('js');setTimeout(function(){if(!document.documentElement.classList.contains('motion-on'))document.documentElement.classList.add('motion-failed')},4500);`;
+const bootScript = `document.documentElement.classList.add('js');setTimeout(function(){if(!document.documentElement.classList.contains('motion-on'))document.documentElement.classList.add('motion-failed')},4500);
+var p=location.pathname;if(p==='/ar'||p.indexOf('/ar/')===0){var h=document.documentElement;h.lang='ar';h.dir='rtl';}`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

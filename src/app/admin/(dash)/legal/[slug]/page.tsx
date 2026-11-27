@@ -1,4 +1,8 @@
 import Link from 'next/link';
+import { LangTabs } from '@/components/admin/LangTabs';
+import { LegalFormAr } from '@/components/admin/ArabicForms';
+import { getPolicyRows } from '@/server/content';
+import type { Policy } from '@/content/legal';
 import { notFound } from 'next/navigation';
 import { requirePermission } from '@/server/auth';
 import { getPolicies } from '@/server/content';
@@ -10,11 +14,13 @@ import { saveLegal } from '../../../_actions/content';
 export const metadata = { title: 'Edit legal page' };
 export const dynamic = 'force-dynamic';
 
-export default async function EditLegal({ params }: { params: Promise<{ slug: string }> }) {
+export default async function EditLegal({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ lang?: string }> }) {
   await requirePermission('content.edit', 'page');
   const { slug } = await params;
   const p = (await getPolicies())[slug];
   if (!p) notFound();
+  const lang = (await searchParams).lang === 'ar' ? 'ar' : 'en';
+  const storedAr = ((await getPolicyRows())[slug]?.ar ?? null) as unknown as Policy | null;
   return (
     <>
       <div className="adm-head">
@@ -25,10 +31,12 @@ export default async function EditLegal({ params }: { params: Promise<{ slug: st
           <h1>{p.title}</h1>
           <p>Formatting: a blank line starts a new paragraph, lines starting with “- ” become a bullet list, and “### ” starts a sub-heading.</p>
         </div>
-        <a className="adm-btn adm-btn--ghost" href={`/${p.slug}`} target="_blank" rel="noreferrer">
+        <a className="adm-btn adm-btn--ghost" href={lang === 'ar' ? `/ar/${p.slug}` : `/${p.slug}`} target="_blank" rel="noreferrer">
           View page ↗
         </a>
       </div>
+      <LangTabs href={`/admin/legal/${p.slug}`} lang={lang} />
+      {lang === 'ar' ? <LegalFormAr slug={p.slug} stored={storedAr} /> : (
       <div className="adm-card">
         <ActionForm action={saveLegal} sticky>
           <input type="hidden" name="slug" value={p.slug} />
@@ -48,6 +56,7 @@ export default async function EditLegal({ params }: { params: Promise<{ slug: st
           />
         </ActionForm>
       </div>
+      )}
     </>
   );
 }

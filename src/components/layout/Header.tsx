@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useT, useLocale } from '@/i18n/client';
+import { stripLocale, switchLocalePath } from '@/i18n/config';
 import { usePathname } from 'next/navigation';
 import { gsap, ScrollTrigger, useGSAP, EASE_INOUT, EASE_OUT, reducedMotion } from '@/lib/gsap';
 import { TransitionLink } from '@/components/motion/TransitionLink';
@@ -10,9 +12,15 @@ import { ArrowIcon } from '@/components/ui/Button';
 import { navFor, countryFromPath, withExtraNav } from '@/content/site';
 import type { ContactProps, CountryLink } from './types';
 import { CountryMenu } from './CountryMenu';
+import { LanguageMenu } from './LanguageMenu';
+import type { ResolvedNav } from '@/content/navigation';
 
-export function Header({ contact, countries, extraNav = [] }: { contact: ContactProps; countries: CountryLink[]; extraNav?: { label: string; href: string }[] }) {
+export function Header({ contact, countries, extraNav = [], nav }: { contact: ContactProps; countries: CountryLink[]; extraNav?: { label: string; href: string }[]; nav: ResolvedNav }) {
   const pathname = usePathname();
+  const t = useT();
+  const locale = useLocale();
+  const path = stripLocale(pathname);
+  const otherLocale = locale === 'ar' ? 'en' : 'ar';
   const { ready } = usePageTransition();
   const lenis = useLenis();
   const headerRef = useRef<HTMLElement>(null);
@@ -22,9 +30,10 @@ export function Header({ contact, countries, extraNav = [] }: { contact: Contact
   const [open, setOpen] = useState(false);
   const [compact, setCompact] = useState(false);
   const [dark, setDark] = useState(true);
-  const menuItems = withExtraNav(navFor(pathname), extraNav);
-  const country = countryFromPath(pathname);
-  const quoteHref = country ? `/quote?country=${country}` : '/quote';
+  const menuItems = withExtraNav(navFor(path, nav.menu), extraNav);
+  const country = countryFromPath(path);
+  const ctaHref = nav.header.ctaHref.replace('{country}', country ?? 'kuwait');
+  const quoteHref = ctaHref === '/quote' && country ? `/quote?country=${country}` : ctaHref;
 
   // Compact state + light/dark tone from whichever section sits under the header.
   useGSAP(
@@ -68,7 +77,7 @@ export function Header({ contact, countries, extraNav = [] }: { contact: Contact
         .timeline({ paused: true, defaults: { ease: EASE_INOUT } })
         .set(root, { visibility: 'visible' })
         .fromTo('.menu__dim', { opacity: 0 }, { opacity: 1, duration: quick ? 0.01 : 0.7 }, 0)
-        .fromTo('.menu__panel', { xPercent: 104 }, { xPercent: 0, duration: quick ? 0.01 : 0.9 }, 0)
+        .fromTo('.menu__panel', { xPercent: document.documentElement.dir === 'rtl' ? -104 : 104 }, { xPercent: 0, duration: quick ? 0.01 : 0.9 }, 0)
         .fromTo('.menu__link', { yPercent: 110 }, { yPercent: 0, duration: quick ? 0.01 : 0.9, ease: EASE_OUT, stagger: 0.05 }, quick ? 0 : 0.35)
         .fromTo('.menu__foot', { autoAlpha: 0, y: 20 }, { autoAlpha: 1, y: 0, duration: quick ? 0.01 : 0.8, ease: EASE_OUT }, quick ? 0 : 0.6);
     },
@@ -107,19 +116,21 @@ export function Header({ contact, countries, extraNav = [] }: { contact: Contact
   return (
     <>
       <header ref={headerRef} className={`header ${compact ? 'is-compact' : ''} ${dark ? 'is-dark' : 'is-light'} ${open ? 'is-open' : ''}`}>
-        <TransitionLink href="/" className="header__logo hide-on-compact" aria-label="AEON Gulf home">
+        <TransitionLink href="/" className="header__logo hide-on-compact" aria-label={t('header.home')}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img className="logo-white" src="/brand/aeon-gulf-white.svg" alt="" width={132} height={46} />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img className="logo-color" src="/brand/aeon-gulf-color.svg" alt="" width={132} height={46} />
         </TransitionLink>
         <div className="header__right">
-          <CountryMenu className="hide-on-compact" countries={countries} />
-          <span className="chip chip--lang hide-on-compact" aria-label="Language: English">EN</span>
-          <TransitionLink href={quoteHref} className="chip chip--cta hide-on-compact">
-            <span className="chip__square" aria-hidden="true" />
-            Get a quote
-          </TransitionLink>
+          {nav.header.showCountries && <CountryMenu className="hide-on-compact" countries={countries} />}
+          {nav.header.showLanguage && <LanguageMenu className="hide-on-compact" />}
+          {nav.header.showCta && (
+            <TransitionLink href={quoteHref} className="chip chip--cta hide-on-compact">
+              <span className="chip__square" aria-hidden="true" />
+              {nav.header.ctaLabel}
+            </TransitionLink>
+          )}
           <button
             ref={toggleRef}
             type="button"
@@ -129,19 +140,19 @@ export function Header({ contact, countries, extraNav = [] }: { contact: Contact
             onClick={() => setOpen((v) => !v)}
           >
             <span className={`menu-icon ${open ? 'is-x' : ''}`} aria-hidden="true" />
-            <span>{open ? 'Close' : 'Menu'}</span>
+            <span>{open ? t('header.close') : t('header.menu')}</span>
           </button>
         </div>
       </header>
 
-      <div ref={menuRef} className="menu" id="site-menu" aria-hidden={!open} role="dialog" aria-label="Site menu">
+      <div ref={menuRef} className="menu" id="site-menu" aria-hidden={!open} role="dialog" aria-label={t('header.siteMenu')}>
         <div className="menu__dim" onClick={() => setOpen(false)} />
         <div className="menu__panel">
           <div>
-            <p className="eyebrow eyebrow--small">Navigate</p>
+            <p className="eyebrow eyebrow--small">{t('menu.navigate')}</p>
             <nav className="menu__links" aria-label="Main">
               {menuItems.map((item) => {
-                const current = item.href.split('?')[0] === pathname;
+                const current = item.href.split('?')[0] === path;
                 return (
                   <span className="menu__link" key={item.href}>
                     <TransitionLink href={item.href} aria-current={current ? 'page' : undefined} tabIndex={open ? 0 : -1} onClick={() => item.href.includes('#') && setOpen(false)}>
@@ -154,7 +165,7 @@ export function Header({ contact, countries, extraNav = [] }: { contact: Contact
           </div>
           <div className="menu__foot">
             <div>
-              <p className="eyebrow eyebrow--small">Contact us</p>
+              <p className="eyebrow eyebrow--small">{t('menu.contactUs')}</p>
               <a className="menu__contact" href={`mailto:${contact.email}`} tabIndex={open ? 0 : -1}>
                 <ArrowIcon /> {contact.email}
               </a>
@@ -162,22 +173,33 @@ export function Header({ contact, countries, extraNav = [] }: { contact: Contact
                 <ArrowIcon /> {contact.phone}
               </a>
             </div>
+            {nav.popular.length > 0 && (
             <div>
-              <p className="eyebrow eyebrow--small">Popular services</p>
+              <p className="eyebrow eyebrow--small">{t('menu.popular')}</p>
               <ul className="menu__list">
-                <li><TransitionLink href={`/${country ?? 'kuwait'}/services/company-formation-management`} tabIndex={open ? 0 : -1}>Company formation</TransitionLink></li>
-                <li><TransitionLink href={`/${country ?? 'kuwait'}/services/visa-immigration-services`} tabIndex={open ? 0 : -1}>Visa and immigration</TransitionLink></li>
-                <li><TransitionLink href={`/${country ?? 'kuwait'}/services/annual-compliance`} tabIndex={open ? 0 : -1}>Annual compliance</TransitionLink></li>
+                {nav.popular.map((p) => (
+                  <li key={p.href + p.label}>
+                    <TransitionLink href={p.href.replace('{country}', country ?? 'kuwait')} tabIndex={open ? 0 : -1}>
+                      {p.label}
+                    </TransitionLink>
+                  </li>
+                ))}
               </ul>
             </div>
+            )}
+            {nav.header.showLanguage && (
             <div className="menu__lang">
-              <p className="eyebrow eyebrow--small">Language</p>
-              <div className="menu__lang-options" role="group" aria-label="Language">
+              <p className="eyebrow eyebrow--small">{t('menu.language')}</p>
+              <div className="menu__lang-options" role="group" aria-label={t('menu.language')}>
                 <span className="menu__lang-option is-active" aria-current="true">
-                  EN <span>English</span>
+                  {locale === 'ar' ? 'ع' : 'EN'} <span>{t('lang.current')}</span>
                 </span>
+                <a className="menu__lang-option" href={switchLocalePath(pathname, otherLocale)} hrefLang={otherLocale}>
+                  {locale === 'ar' ? 'EN' : 'ع'} <span>{t('lang.other')}</span>
+                </a>
               </div>
             </div>
+            )}
           </div>
         </div>
       </div>

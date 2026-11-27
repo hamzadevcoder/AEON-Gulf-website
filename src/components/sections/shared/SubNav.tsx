@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { useT } from '@/i18n/client';
 import { gsap, ScrollTrigger, useGSAP, reducedMotion } from '@/lib/gsap';
 import { useLenis } from '@/components/motion/MotionProvider';
 import { usePageTransition } from '@/components/motion/TransitionProvider';
@@ -12,6 +13,7 @@ import { usePageTransition } from '@/components/motion/TransitionProvider';
 export function SubNav({ items }: { items: { id: string; label: string }[] }) {
   const ref = useRef<HTMLElement>(null);
   const lenis = useLenis();
+  const t = useT();
   const { ready } = usePageTransition();
   const [active, setActive] = useState(items[0]?.id);
 
@@ -44,7 +46,7 @@ export function SubNav({ items }: { items: { id: string; label: string }[] }) {
   );
 
   return (
-    <nav ref={ref} className="subnav" aria-label="On this page">
+    <nav ref={ref} className="subnav" aria-label={t('common.onThisPage')}>
       {items.map((it) => (
         <a
           key={it.id}

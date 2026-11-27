@@ -76,7 +76,7 @@ export async function addSection(fd: FormData) {
   sections.splice(at || sections.length, 0, section);
   await saveSections(page.id, sections, me.id);
   await audit(me.id, 'page.section_add', 'page', page.id, { type: section.type });
-  redirect(`/admin/pages/custom/${page.id}?open=${section.id}#s-${section.id}`);
+  redirect(`/admin/pages/custom/${page.id}?open=${section.id}${str(fd, 'lang') === 'ar' ? '&lang=ar' : ''}#s-${section.id}`);
 }
 
 export async function saveSection(_prev: ActionState, fd: FormData): Promise<ActionState> {
@@ -87,7 +87,8 @@ export async function saveSection(_prev: ActionState, fd: FormData): Promise<Act
     if (i < 0) throw new UserError('This section no longer exists.');
     const tpl = sectionTemplate(sections[i].type);
     if (!tpl) throw new UserError('Unknown section type.');
-    sections[i] = { ...sections[i], data: fieldsSchema(tpl.fields).parse(readFields(fd, tpl.fields)) };
+    const value = fieldsSchema(tpl.fields).parse(readFields(fd, tpl.fields));
+    sections[i] = str(fd, 'lang') === 'ar' ? { ...sections[i], dataAr: value } : { ...sections[i], data: value };
     await saveSections(page.id, sections, me.id);
     await audit(me.id, 'page.section_save', 'page', page.id, { type: tpl.type });
     return { ok: true, message: page.published ? 'Saved. The website has been updated.' : 'Saved (this page is still a draft).' };
@@ -100,7 +101,7 @@ async function mutate(fd: FormData, fn: (sections: PageSection[], id: string) =>
   const sectionId = str(fd, 'sectionId');
   await saveSections(page.id, fn([...page.sections], sectionId), me.id);
   await audit(me.id, action, 'page', page.id, { sectionId });
-  redirect(`/admin/pages/custom/${page.id}`);
+  redirect(`/admin/pages/custom/${page.id}${str(fd, 'lang') === 'ar' ? '?lang=ar' : ''}`);
 }
 
 export async function moveSection(fd: FormData) {

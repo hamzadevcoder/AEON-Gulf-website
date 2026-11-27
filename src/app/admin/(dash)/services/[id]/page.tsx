@@ -1,4 +1,8 @@
 import Link from 'next/link';
+import { LangTabs, ArabicArea } from '@/components/admin/LangTabs';
+import { ServiceFormAr } from '../ServiceFormAr';
+import { clearServiceAr } from '../../../_actions/i18n';
+import { isServiceTranslated } from '@/server/content';
 import { notFound } from 'next/navigation';
 import { asc, eq } from 'drizzle-orm';
 import { z } from 'zod';
@@ -12,7 +16,7 @@ import { deleteService } from '../../../_actions/content';
 
 export const metadata = { title: 'Edit service' };
 
-export default async function EditService({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ created?: string }> }) {
+export default async function EditService({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ created?: string; lang?: string }> }) {
   await requirePermission('content.edit', 'page');
   const { id } = await params;
   if (!z.string().uuid().safeParse(id).success) notFound();
@@ -23,6 +27,7 @@ export default async function EditService({ params, searchParams }: { params: Pr
   ]);
   if (!row) notFound();
   const country = countries.find((c) => c.slug === row.country);
+  const lang = (await searchParams).lang === 'ar' ? 'ar' : 'en';
   return (
     <>
       <div className="adm-head">
@@ -35,7 +40,7 @@ export default async function EditService({ params, searchParams }: { params: Pr
         </div>
         <div className="adm-actions">
           {row.published && (
-            <a className="adm-btn adm-btn--ghost" href={servicePath(row)} target="_blank" rel="noreferrer">
+            <a className="adm-btn adm-btn--ghost" href={lang === 'ar' ? `/ar${servicePath(row)}` : servicePath(row)} target="_blank" rel="noreferrer">
               View on website ↗
             </a>
           )}
@@ -47,9 +52,17 @@ export default async function EditService({ params, searchParams }: { params: Pr
         </div>
       </div>
       {(await searchParams).created && <p className="adm-notice adm-notice--ok">Service created.</p>}
+      <LangTabs href={`/admin/services/${row.id}`} lang={lang} arStatus={isServiceTranslated(row.ar, row.country, row.slug) ? 'translated' : 'not translated'} />
       <div className="adm-card">
-        <ServiceForm row={row} countries={countries} />
+        {lang === 'ar' ? <ServiceFormAr row={row} /> : <ServiceForm row={row} countries={countries} />}
       </div>
+      {lang === 'ar' && row.ar && (
+        <ConfirmForm action={clearServiceAr} confirm="Remove the Arabic version of this service? The Arabic site will show the short summary page again." hidden={{ id: row.id }}>
+          <button className="adm-btn adm-btn--danger adm-btn--sm" type="submit" style={{ marginTop: 12 }}>
+            Remove Arabic version
+          </button>
+        </ConfirmForm>
+      )}
     </>
   );
 }

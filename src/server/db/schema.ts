@@ -121,6 +121,7 @@ export const countries = pgTable('countries', {
   quickFacts: jsonb('quick_facts').$type<{ label: string; value: string }[]>().notNull().default([]),
   authorities: jsonb('authorities').$type<string[]>().notNull().default([]),
   office: jsonb('office').$type<{ detail: string; phone: string | null }>().notNull().default({ detail: '', phone: null }),
+  ar: jsonb('ar').$type<Record<string, unknown> | null>(), // Arabic version (null = not translated)
   sort: integer('sort').notNull().default(0),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -147,6 +148,7 @@ export const services = pgTable('services', {
   ctaHeading: text('cta_heading').notNull(),
   ctaDescription: text('cta_description').notNull(),
   ctaText: text('cta_text').notNull(),
+  ar: jsonb('ar').$type<Record<string, unknown> | null>(), // Arabic version (null = not translated)
   published: boolean('published').notNull().default(true),
   sort: integer('sort').notNull().default(0),
   updatedBy: uuid('updated_by').references(() => users.id, { onDelete: 'set null' }),
@@ -163,6 +165,7 @@ export const guides = pgTable('guides', {
   category: text('category').notNull().default('Guide'),
   image: text('image').notNull(), // image slot key or full URL
   service: text('service').notNull(), // related service slug in that country
+  ar: jsonb('ar').$type<Record<string, unknown> | null>(), // Arabic version (null = not translated)
   intro: jsonb('intro').$type<string[]>().notNull().default([]),
   published: boolean('published').notNull().default(true),
   sort: integer('sort').notNull().default(0),
@@ -175,12 +178,13 @@ export const legalPages = pgTable('legal_pages', {
   title: text('title').notNull(),
   effective: text('effective').notNull(),
   intro: jsonb('intro').notNull(),
+  ar: jsonb('ar').$type<Record<string, unknown> | null>(), // Arabic version (null = not translated)
   sections: jsonb('sections').notNull(),
   updatedBy: uuid('updated_by').references(() => users.id, { onDelete: 'set null' }),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
-export type PageSection = { id: string; type: string; hidden?: boolean; data: Record<string, unknown> };
+export type PageSection = { id: string; type: string; hidden?: boolean; data: Record<string, unknown>; dataAr?: Record<string, unknown> };
 
 /** Pages created in the dashboard, built from section templates. */
 export const pages = pgTable('pages', {
@@ -191,6 +195,7 @@ export const pages = pgTable('pages', {
   metaDescription: text('meta_description').notNull().default(''),
   published: boolean('published').notNull().default(false),
   showInMenu: boolean('show_in_menu').notNull().default(false),
+  ar: jsonb('ar').$type<Record<string, unknown> | null>(), // Arabic version (null = not translated)
   sections: jsonb('sections').$type<PageSection[]>().notNull().default([]),
   updatedBy: uuid('updated_by').references(() => users.id, { onDelete: 'set null' }),
   ...timestamps,

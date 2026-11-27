@@ -5,16 +5,12 @@ import { usePathname } from 'next/navigation';
 import { ArrowIcon } from '@/components/ui/Button';
 import { Flag } from '@/components/ui/Flag';
 import { submitQuote } from '@/app/actions/forms';
-import { quoteSchema, fieldErrors } from '@/lib/forms-schema';
+import { quoteSchema, fieldErrors, unshownErrors, focusFirstInvalid } from '@/lib/forms-schema';
 
-const projectTypes = [
-  'New company or branch setup',
-  'Ongoing PRO / GRO and compliance support',
-  'Changes to an existing company',
-  'Relocation of staff or offices',
-  'Closing a company or branch',
-  'Other',
-];
+const SHOWN = ['name', 'email', 'phone', 'company', 'country', 'service', 'details'];
+import { useT, useLocale, useHref } from '@/i18n/client';
+
+const projectTypes = ['form.type.new', 'form.type.ongoing', 'form.type.changes', 'form.type.relocation', 'form.type.closing', 'form.type.other'];
 
 /** What the server passes in: the countries and each country's services, grouped. */
 export type QuoteOptions = {
@@ -33,8 +29,11 @@ type Props = {
 };
 
 /** "Get a quote" form: validated in the browser and on the server, saved to the database, emailed to the team. */
-export function QuoteForm({ options, country: initialCountry, service: initialService, compact = false, title = 'Request a quote' }: Props) {
+export function QuoteForm({ options, country: initialCountry, service: initialService, compact = false, title }: Props) {
   const pathname = usePathname();
+  const t = useT();
+  const locale = useLocale();
+  const href = useHref();
   const [country, setCountry] = useState(initialCountry ?? '');
   const [service, setService] = useState(initialService ?? '');
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -63,7 +62,7 @@ export function QuoteForm({ options, country: initialCountry, service: initialSe
   const err = (name: string) =>
     errors[name] ? (
       <span className="field__error" id={`q-${name}-error`} role="alert">
-        {errors[name]}
+        {t(errors[name])}
       </span>
     ) : null;
   const aria = (name: string) => (errors[name] ? { 'aria-invalid': true, 'aria-describedby': `q-${name}-error` } : {});
@@ -87,13 +86,16 @@ export function QuoteForm({ options, country: initialCountry, service: initialSe
           location: String(d.get('location') ?? ''),
           budget: String(d.get('budget') ?? ''),
           details: String(d.get('details') ?? ''),
-          website: String(d.get('website') ?? ''),
+          website: String(d.get('hp_ref') ?? ''),
           sourcePage: pathname,
+          locale,
         };
         const check = quoteSchema.safeParse(input);
         if (!check.success) {
-          setErrors(fieldErrors(check.error));
-          setStatus({ ok: false, message: 'Please check the highlighted fields.' });
+          const errs = fieldErrors(check.error);
+          setErrors(errs);
+          setStatus({ ok: false, message: [t('form.check'), ...unshownErrors(errs, SHOWN).map((m) => t(m))].join(' ') });
+          focusFirstInvalid(form);
           return;
         }
         setErrors({});
@@ -101,7 +103,8 @@ export function QuoteForm({ options, country: initialCountry, service: initialSe
         start(async () => {
           const res = await submitQuote(input);
           setErrors(res.errors ?? {});
-          setStatus({ ok: res.ok, message: res.message });
+          setStatus({ ok: res.ok, message: res.ok ? res.message : [res.message, ...unshownErrors(res.errors ?? {}, SHOWN).map((m) => t(m))].join(' ') });
+          if (!res.ok) focusFirstInvalid(form);
           if (res.ok) {
             form.reset();
             if (!initialService) setService('');
@@ -109,37 +112,37 @@ export function QuoteForm({ options, country: initialCountry, service: initialSe
         });
       }}
     >
-      <p className="eyebrow">{title}</p>
+      <p className="eyebrow">{title ?? t('form.requestQuote')}</p>
       <div className="hp" aria-hidden="true">
         <label>
           Leave this empty
-          <input name="website" tabIndex={-1} autoComplete="off" />
+          <input name="hp_ref" tabIndex={-1} autoComplete="off" data-lpignore="true" data-1p-ignore="true" data-form-type="other" />
         </label>
       </div>
       <div className="quote-form__grid">
         <label className="field">
-          <span>Full name*</span>
-          <input name="name" required autoComplete="name" placeholder="Enter your full name" maxLength={120} {...aria('name')} />
+          <span>{t('form.fullName')}</span>
+          <input name="name" required autoComplete="name" placeholder={t('form.fullNamePh')} maxLength={120} {...aria('name')} />
           {err('name')}
         </label>
         <label className="field">
-          <span>Email address*</span>
-          <input name="email" type="email" required autoComplete="email" placeholder="Enter your email" maxLength={254} {...aria('email')} />
+          <span>{t('form.email')}</span>
+          <input name="email" type="email" required autoComplete="email" placeholder={t('form.emailPh')} maxLength={254} {...aria('email')} />
           {err('email')}
         </label>
         <label className="field">
-          <span>Phone number*</span>
-          <input name="phone" type="tel" required autoComplete="tel" placeholder="Enter your phone number" maxLength={40} {...aria('phone')} />
+          <span>{t('form.phone')}</span>
+          <input name="phone" type="tel" required autoComplete="tel" placeholder={t('form.phonePh')} maxLength={40} {...aria('phone')} />
           {err('phone')}
         </label>
         <label className="field">
-          <span>Company name*</span>
-          <input name="company" required autoComplete="organization" placeholder="Enter your company name" maxLength={160} {...aria('company')} />
+          <span>{t('form.company')}</span>
+          <input name="company" required autoComplete="organization" placeholder={t('form.companyPh')} maxLength={160} {...aria('company')} />
           {err('company')}
         </label>
       </div>
       <fieldset className="field" {...aria('country')}>
-        <legend>Country*</legend>
+        <legend>{t('form.country')}</legend>
         <div className="pills">
           {options.countries.map((c) => (
             <label className="pill pill--radio" key={c.slug}>
@@ -153,9 +156,9 @@ export function QuoteForm({ options, country: initialCountry, service: initialSe
       </fieldset>
       <div className="quote-form__grid">
         <label className="field field--select">
-          <span>Service required*</span>
+          <span>{t('form.service')}</span>
           <select name="service" required value={service} onChange={(e) => setService(e.target.value)} {...aria('service')}>
-            <option value="">Select a service</option>
+            <option value="">{t('form.selectService')}</option>
             {groups.map((g) =>
               g.items.length ? (
                 <optgroup key={g.label} label={g.label}>
@@ -172,38 +175,38 @@ export function QuoteForm({ options, country: initialCountry, service: initialSe
           {err('service')}
         </label>
         <label className="field field--select">
-          <span>Project type</span>
+          <span>{t('form.projectType')}</span>
           <select name="type" defaultValue="">
-            <option value="">Select a project type</option>
-            {projectTypes.map((t) => (
-              <option key={t}>{t}</option>
+            <option value="">{t('form.selectType')}</option>
+            {projectTypes.map((k) => (
+              <option key={k}>{t(k)}</option>
             ))}
           </select>
         </label>
         {!compact && (
           <>
             <label className="field">
-              <span>Location</span>
-              <input name="location" placeholder="City or address" maxLength={200} />
+              <span>{t('form.location')}</span>
+              <input name="location" placeholder={t('form.locationPh')} maxLength={200} />
             </label>
             <label className="field">
-              <span>Project budget</span>
-              <input name="budget" placeholder="Approximate budget, if known" maxLength={120} />
+              <span>{t('form.budget')}</span>
+              <input name="budget" placeholder={t('form.budgetPh')} maxLength={120} />
             </label>
           </>
         )}
       </div>
       <label className="field">
-        <span>Project description</span>
-        <textarea name="details" rows={compact ? 3 : 4} maxLength={4000} placeholder="Briefly describe your business and what you need." {...aria('details')} />
+        <span>{t('form.description')}</span>
+        <textarea name="details" rows={compact ? 3 : 4} maxLength={4000} placeholder={t('form.descriptionPh')} {...aria('details')} />
         {err('details')}
       </label>
       <div className="quote-form__foot">
         <button type="submit" className="btn btn--white btn--send" disabled={pending}>
-          <ArrowIcon /> <span>{pending ? 'Sending…' : 'Send request'}</span>
+          <ArrowIcon /> <span>{pending ? t('form.sending') : t('form.send')}</span>
         </button>
         <p className="quote-form__note">
-          By sending this request you agree to our <a href="/privacy-policy">Privacy Policy</a>.
+          {t('form.agree')} <a href={href('/privacy-policy')}>{t('legal.privacy')}</a>.
         </p>
       </div>
       <p className={`contact-form__status ${status ? (status.ok ? 'is-ok' : 'is-error') : ''}`} aria-live="polite">

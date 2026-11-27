@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { LangTabs } from '@/components/admin/LangTabs';
+import { CountryFormAr } from '@/components/admin/ArabicForms';
 import { notFound } from 'next/navigation';
 import { eq } from 'drizzle-orm';
 import { requirePermission } from '@/server/auth';
@@ -9,11 +11,12 @@ import { saveCountry } from '../../../_actions/content';
 
 export const metadata = { title: 'Edit country' };
 
-export default async function EditCountry({ params }: { params: Promise<{ slug: string }> }) {
+export default async function EditCountry({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ lang?: string }> }) {
   await requirePermission('content.edit', 'page');
   const { slug } = await params;
   const [c] = await requireDb().select().from(schema.countries).where(eq(schema.countries.slug, slug));
   if (!c) notFound();
+  const lang = (await searchParams).lang === 'ar' ? 'ar' : 'en';
   return (
     <>
       <div className="adm-head">
@@ -23,10 +26,12 @@ export default async function EditCountry({ params }: { params: Promise<{ slug: 
           </nav>
           <h1>{c.name}</h1>
         </div>
-        <a className="adm-btn adm-btn--ghost" href={`/${c.slug}`} target="_blank" rel="noreferrer">
+        <a className="adm-btn adm-btn--ghost" href={lang === 'ar' ? `/ar/${c.slug}` : `/${c.slug}`} target="_blank" rel="noreferrer">
           View page ↗
         </a>
       </div>
+      <LangTabs href={`/admin/countries/${c.slug}`} lang={lang} />
+      {lang === 'ar' ? <CountryFormAr c={c} /> : (
       <div className="adm-card">
         <ActionForm action={saveCountry} sticky>
           <input type="hidden" name="slug" value={c.slug} />
@@ -60,6 +65,7 @@ export default async function EditCountry({ params }: { params: Promise<{ slug: 
           </div>
         </ActionForm>
       </div>
+      )}
     </>
   );
 }

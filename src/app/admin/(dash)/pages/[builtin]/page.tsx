@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { LangTabs, ArabicArea } from '@/components/admin/LangTabs';
 import { notFound } from 'next/navigation';
 import { requirePermission } from '@/server/auth';
 import { requireDb, schema } from '@/server/db';
@@ -22,16 +23,18 @@ const related: Record<string, { href: string; label: string }[]> = {
   quote: [{ href: '/admin/settings', label: 'Where quote emails go: Settings & emails' }],
 };
 
-export default async function EditBuiltinPage({ params, searchParams }: { params: Promise<{ builtin: string }>; searchParams: Promise<{ open?: string; reset?: string }> }) {
+export default async function EditBuiltinPage({ params, searchParams }: { params: Promise<{ builtin: string }>; searchParams: Promise<{ open?: string; reset?: string; lang?: string }> }) {
   await requirePermission('content.edit', 'page');
   const { builtin } = await params;
   const page = builtinPage(builtin);
   if (!page) notFound();
   const sp = await searchParams;
+  const lang = sp.lang === 'ar' ? 'ar' : 'en';
+  const k = (key: string) => (lang === 'ar' ? `ar:${key}` : key);
   const blocks = blockDefs.filter((b) => b.page === page.group);
   const [options, rows] = await Promise.all([imageOptions(), requireDb().select().from(schema.contentBlocks)]);
   const editedAt = Object.fromEntries(rows.map((r) => [r.key, r.updatedAt]));
-  const values = await Promise.all(blocks.map((b) => getBlock(b.key as BlockKey) as Promise<Record<string, unknown>>));
+  const values = await Promise.all(blocks.map((b) => getBlock(b.key as BlockKey, lang) as Promise<Record<string, unknown>>));
 
   return (
     <>
@@ -43,11 +46,13 @@ export default async function EditBuiltinPage({ params, searchParams }: { params
           <h1>{page.name}</h1>
           <p>{page.description}</p>
         </div>
-        <a className="adm-btn adm-btn--ghost" href={page.url} target="_blank" rel="noreferrer">
+        <a className="adm-btn adm-btn--ghost" href={lang === 'ar' ? `/ar${page.url === '/' ? '' : page.url}` : page.url} target="_blank" rel="noreferrer">
           View page ↗
         </a>
       </div>
       {sp.reset && <p className="adm-notice adm-notice--ok">Original text restored.</p>}
+      <LangTabs href={`/admin/pages/${builtin}`} lang={lang} />
+      {lang === 'ar' && <p className="adm-hint">You are editing the Arabic page (yourwebsite.com/ar). Each section starts with the built-in Arabic text.</p>}
       <p className="adm-hint">Click a section to open and edit it. Each section saves on its own and goes live straight away.</p>
       <div className="adm-seclist">
         {blocks.map((b, i) => (
@@ -58,15 +63,22 @@ export default async function EditBuiltinPage({ params, searchParams }: { params
             title={b.title}
             summary={b.description}
             open={sp.open === b.key || blocks.length === 1}
-            badge={editedAt[b.key] ? <span className="adm-badge adm-badge--responded">{`Edited ${fmtDate(editedAt[b.key])}`}</span> : <span className="adm-badge">Original</span>}
+            badge={editedAt[k(b.key)] ? <span className="adm-badge adm-badge--responded">{`Edited ${fmtDate(editedAt[k(b.key)])}`}</span> : <span className="adm-badge">Original</span>}
           >
             <ActionForm action={saveBlock} sticky submitLabel="Save section">
               <input type="hidden" name="key" value={b.key} />
-              <FieldsEditor fields={b.fields} values={values[i]} imageOptions={options} />
+              <input type="hidden" name="lang" value={lang} />
+              {lang === 'ar' ? (
+                <ArabicArea>
+                  <FieldsEditor fields={b.fields} values={values[i]} imageOptions={options} />
+                </ArabicArea>
+              ) : (
+                <FieldsEditor fields={b.fields} values={values[i]} imageOptions={options} />
+              )}
             </ActionForm>
-            {editedAt[b.key] && (
+            {editedAt[k(b.key)] && (
               <div style={{ marginTop: 14 }}>
-                <ConfirmForm action={resetBlock} confirm="Restore the original text for this section? Your edits will be lost." hidden={{ key: b.key }}>
+                <ConfirmForm action={resetBlock} confirm="Restore the original text for this section? Your edits will be lost." hidden={{ key: b.key, lang }}>
                   <button className="adm-btn adm-btn--ghost adm-btn--sm" type="submit">
                     Restore original text
                   </button>
